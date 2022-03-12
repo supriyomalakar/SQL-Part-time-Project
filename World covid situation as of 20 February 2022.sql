@@ -5,9 +5,9 @@ order by 3,4
 
 --for table- CovidVaccination
 
---select * 
---from CovidStatusGlobal..CovidVaccination
---order by 3,4
+select * 
+from CovidStatusGlobal..CovidVaccination
+order by 3,4
 
 select location, date, total_cases, new_cases, total_deaths, population
 from CovidStatusGlobal..CovidDeath
@@ -112,36 +112,20 @@ order by 1,2
 
 
 
--- Using CTE to perform Calculation on Partition By in previous query
+-- CTE to perform Calculation on Partition By in previous query
 
 With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
 as
 (
 Select death.continent, death.location, death.date, death.population, vac.new_vaccinations
-, SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by dea.Location Order by dea.location, dea.Date) as RollingPeopleVaccinated
-from CovidStatusGlobal..CovidDeath as Death
-inner join CovidStatusGlobal..CovidVaccination as Vac
-	on death.location = Vac.location
-	and death.date=Vac.date
-where death.continent is not null 
-)
-Select *, (RollingPeopleVaccinated/Population)*100
-From PopvsVac
-
---Vaccination count in context of India
-
-With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
-as
-(
-Select death.continent, death.location, death.date, death.population, vac.new_vaccinations
-, SUM(CONVERT(bigint,vac.new_vaccinations)) OVER (Partition by death.Location Order by death.location, death.Date) as RollingPeopleVaccinated
+, SUM(CONVERT(bigint,vac.new_vaccinations)) OVER (Partition by death.Location Order by death.location, death.Date) as PeopleVaccinated
 from CovidStatusGlobal..CovidDeath as Death
 inner join CovidStatusGlobal..CovidVaccination as Vac
 	on death.location = Vac.location
 	and death.date=Vac.date
 where death.continent is not null and death.location = 'india'
 )
-Select *, ((RollingPeopleVaccinated/Population)*100)/2 as percentage_vaccination_done
+Select *, ((PeopleVaccinated/Population)*100)/2 as percentage_vaccination_done
 From PopvsVac
 
 
@@ -156,29 +140,27 @@ Location nvarchar(255),
 Date datetime,
 Population numeric,
 New_vaccinations numeric,
-RollingPeopleVaccinated numeric
+PeopleVaccinated numeric
 )
 Insert into #PercentPopulationVaccinated
-Select death.continent, death.location, death.date, death.population, Vac.new_vaccinations, SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by death.Location Order by death.location, dea.Date) as RollingPeopleVaccinated
-
-From PortfolioProject..CovidDeaths death
-Join PortfolioProject..CovidVaccinations vac
+Select death.continent, death.location, death.date, death.population, Vac.new_vaccinations, SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by death.Location Order by death.location, death.Date) as PeopleVaccinated
+From CovidStatusGlobal..CovidDeath death
+Join CovidStatusGlobal..CovidVaccination vac
 	On death.location = vac.location
 	and death.date = vac.date
-
-Select *, (RollingPeopleVaccinated/Population)*100
+Select *, (PeopleVaccinated/Population)*100
 From #PercentPopulationVaccinated
 
 
 
--- Creating View to store data for later visualizations
+-- Creating View to store data 
 
 Create View PercentPopulationVaccinated as
 Select death.continent, death.location, death.date, death.population, vac.new_vaccinations
-, SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by death.Location Order by death.location, dea.Date) as RollingPeopleVaccinated
+, SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by death.Location Order by death.location, death.Date) as PeopleVaccinated
 --, (RollingPeopleVaccinated/population)*100
-From PortfolioProject..CovidDeaths dea
-Join PortfolioProject..CovidVaccinations vac
+From CovidStatusGlobal..CovidDeath death
+Join CovidStatusGlobal..CovidVaccination vac
 	On death.location = vac.location
 	and death.date = vac.date
 where death.continent is not null 
