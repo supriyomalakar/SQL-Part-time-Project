@@ -128,6 +128,22 @@ where death.continent is not null
 Select *, (RollingPeopleVaccinated/Population)*100
 From PopvsVac
 
+--Vaccination count in context of India
+
+With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
+as
+(
+Select death.continent, death.location, death.date, death.population, vac.new_vaccinations
+, SUM(CONVERT(bigint,vac.new_vaccinations)) OVER (Partition by death.Location Order by death.location, death.Date) as RollingPeopleVaccinated
+from CovidStatusGlobal..CovidDeath as Death
+inner join CovidStatusGlobal..CovidVaccination as Vac
+	on death.location = Vac.location
+	and death.date=Vac.date
+where death.continent is not null and death.location = 'india'
+)
+Select *, ((RollingPeopleVaccinated/Population)*100)/2 as percentage_vaccination_done
+From PopvsVac
+
 
 
 -- Using Temp Table to perform Calculation on Partition By in previous query
