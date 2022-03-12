@@ -165,7 +165,7 @@ From PortfolioProject..CovidDeaths dea
 Join PortfolioProject..CovidVaccinations vac
 	On death.location = vac.location
 	and death.date = vac.date
-where dea.continent is not null 
+where death.continent is not null 
 
 
 
